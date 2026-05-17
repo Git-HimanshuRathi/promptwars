@@ -18,22 +18,7 @@ RUN pnpm --filter @lexguard/shared exec tsc -p tsconfig.json
 RUN pnpm --filter @lexguard/ai exec tsc -p tsconfig.json
 # Patch package.json exports to dist/ BEFORE pnpm deploy so the deploy bundle
 # picks up compiled output (not the .ts source paths used for local dev).
-RUN node -e "
-  const fs = require('fs');
-  for (const dir of ['packages/shared', 'packages/ai']) {
-    const p = dir + '/package.json';
-    const j = JSON.parse(fs.readFileSync(p, 'utf8'));
-    j.main = './dist/index.js';
-    if (j.exports) {
-      for (const [k, v] of Object.entries(j.exports)) {
-        if (typeof v === 'string')
-          j.exports[k] = v.replace('./src/', './dist/').replace(/\.ts$/, '.js');
-      }
-    }
-    delete j.types;
-    fs.writeFileSync(p, JSON.stringify(j, null, 2));
-  }
-"
+RUN node scripts/patch-exports.cjs
 RUN pnpm --filter @lexguard/api build
 # pnpm deploy creates a flat node_modules with no pnpm symlinks — workspace
 # packages are included with the patched package.json + compiled dist/.
