@@ -1,0 +1,32 @@
+# Optional local docker-compose. Not required for development —
+# you can just run `pnpm dev` directly. This is here for running the
+# production-built images locally before pushing to Cloud Run.
+
+name: lexguard
+
+services:
+  api:
+    build:
+      context: ../..
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 8080
+      CORS_ORIGINS: http://localhost:3000
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+    ports:
+      - "4000:8080"
+
+  web:
+    build:
+      context: ../..
+      dockerfile: apps/web/Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: http://localhost:4000
+    ports:
+      - "3000:8080"
+    depends_on:
+      - api

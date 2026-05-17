@@ -1,0 +1,56 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Builds
+dist/
+build/
+.next/
+.turbo/
+out/
+*.tsbuildinfo
+
+# Env
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+
+# Coverage
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.recommended.json
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Misc
+.cache/
+.parcel-cache/
+.serverless/
+.firebase/
+firebase-debug.log
+
+# Prisma
+apps/api/prisma/migrations/dev/
+
+# Secrets
+*.pem
+*.key
+service-account*.json
+gcp-key.json
