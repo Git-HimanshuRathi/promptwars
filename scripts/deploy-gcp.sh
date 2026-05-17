@@ -13,6 +13,8 @@ fi
 
 REPO="$REGION-docker.pkg.dev/$PROJECT_ID/lexguard"
 TAG="$(git rev-parse --short HEAD 2>/dev/null || echo latest)"
+TMPDIR_CB="$(mktemp -d)"
+trap 'rm -rf "$TMPDIR_CB"' EXIT
 
 echo "▸ Setting project: $PROJECT_ID"
 gcloud config set project "$PROJECT_ID"
@@ -39,7 +41,7 @@ if ! gcloud secrets describe gemini-api-key >/dev/null 2>&1; then
 fi
 
 echo "▸ Building + pushing API image"
-gcloud builds submit --config=/dev/stdin . <<EOF
+cat > "$TMPDIR_CB/cloudbuild-api.yaml" <<EOF
 steps:
 - name: gcr.io/cloud-builders/docker
   args: ['build', '-f', 'apps/api/Dockerfile', '-t', '$REPO/api:$TAG', '.']
@@ -48,10 +50,9 @@ steps:
 images:
 - '$REPO/api:$TAG'
 EOF
+gcloud builds submit --config="$TMPDIR_CB/cloudbuild-api.yaml" .
 
 # Grant the default Cloud Run service account access to Secret Manager + Vertex AI.
-# (Terraform sets this up properly via a dedicated SA — this script is a quick
-# path that uses the default compute SA so the demo deploy works out of the box.)
 PROJECT_NUMBER=$(gcloud projects describe "$PROJECT_ID" --format='value(projectNumber)')
 DEFAULT_SA="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
 for ROLE in roles/secretmanager.secretAccessor roles/aiplatform.user roles/logging.logWriter; do
@@ -71,7 +72,7 @@ API_URL=$(gcloud run deploy lexguard-api \
 echo "▸ API live at: $API_URL"
 
 echo "▸ Building + pushing Web image"
-gcloud builds submit --config=/dev/stdin . <<EOF
+cat > "$TMPDIR_CB/cloudbuild-web.yaml" <<EOF
 steps:
 - name: gcr.io/cloud-builders/docker
   args: ['build', '-f', 'apps/web/Dockerfile', '--build-arg', 'NEXT_PUBLIC_API_URL=$API_URL', '-t', '$REPO/web:$TAG', '.']
@@ -80,6 +81,7 @@ steps:
 images:
 - '$REPO/web:$TAG'
 EOF
+gcloud builds submit --config="$TMPDIR_CB/cloudbuild-web.yaml" .
 
 echo "▸ Deploying Web to Cloud Run"
 WEB_URL=$(gcloud run deploy lexguard-web \

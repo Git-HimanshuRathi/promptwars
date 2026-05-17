@@ -11,6 +11,8 @@ RUN pnpm install --frozen-lockfile=false
 
 FROM deps AS build
 COPY . .
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN pnpm --filter @lexguard/web build
 
