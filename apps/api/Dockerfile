@@ -12,14 +12,15 @@ RUN pnpm install --frozen-lockfile=false --prod=false
 
 FROM deps AS build
 COPY . .
-# Build workspace packages first — they export .ts source (fine for tsx/Next.js
-# in dev), but Node.js needs compiled .js at runtime.
-RUN pnpm --filter @lexguard/shared exec tsc -p tsconfig.json
-RUN pnpm --filter @lexguard/ai exec tsc -p tsconfig.json
-# Patch package.json exports to dist/ BEFORE pnpm deploy so the deploy bundle
-# picks up compiled output (not the .ts source paths used for local dev).
-RUN node scripts/patch-exports.cjs
+# Compile workspace packages to dist/ — tsc is run directly via cd so pnpm
+# filter/exec quirks don't interfere.
+RUN cd packages/shared && tsc -p tsconfig.json
+RUN cd packages/ai && tsc -p tsconfig.json
+# Build API while workspace packages still export ./src/*.ts so TypeScript
+# (NodeNext mode) can resolve types from source. Patch happens after.
 RUN pnpm --filter @lexguard/api build
+# NOW patch exports to dist/ so pnpm deploy bundles compiled output, not .ts
+RUN node scripts/patch-exports.cjs
 # pnpm deploy creates a flat node_modules with no pnpm symlinks — workspace
 # packages are included with the patched package.json + compiled dist/.
 RUN pnpm --filter @lexguard/api deploy --prod /deploy
