@@ -12,10 +12,10 @@ RUN pnpm install --frozen-lockfile=false --prod=false
 
 FROM deps AS build
 COPY . .
-# Compile workspace packages to dist/ — tsc is run directly via cd so pnpm
-# filter/exec quirks don't interfere.
-RUN cd packages/shared && tsc -p tsconfig.json
-RUN cd packages/ai && tsc -p tsconfig.json
+# Compile workspace packages to dist/ via pnpm run so tsc resolves from
+# node_modules/.bin (bare `tsc` is not in PATH).
+RUN pnpm --filter @lexguard/shared run build
+RUN pnpm --filter @lexguard/ai run build
 # Build API while workspace packages still export ./src/*.ts so TypeScript
 # (NodeNext mode) can resolve types from source. Patch happens after.
 RUN pnpm --filter @lexguard/api build
