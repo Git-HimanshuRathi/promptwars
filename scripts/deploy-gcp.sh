@@ -39,7 +39,7 @@ if ! gcloud secrets describe gemini-api-key >/dev/null 2>&1; then
 fi
 
 echo "▸ Building + pushing API image"
-gcloud builds submit --tag "$REPO/api:$TAG" --config=/dev/stdin . <<EOF
+gcloud builds submit --config=/dev/stdin . <<EOF
 steps:
 - name: gcr.io/cloud-builders/docker
   args: ['build', '-f', 'apps/api/Dockerfile', '-t', '$REPO/api:$TAG', '.']

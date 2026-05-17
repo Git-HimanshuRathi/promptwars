@@ -1,4 +1,6 @@
 import { createHash } from 'node:crypto';
+import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import Fastify from 'fastify';
 import helmet from '@fastify/helmet';
 import cors from '@fastify/cors';
@@ -376,6 +378,10 @@ async function main(): Promise<void> {
   }
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+// Robustly detect "am I the entry point?" — process.argv[1] may be relative
+// (e.g. Docker CMD ["node", "apps/api/dist/server.js"]) while import.meta.url
+// is always absolute. Resolve both to compare.
+const __filename = fileURLToPath(import.meta.url);
+if (process.argv[1] && resolve(process.argv[1]) === __filename) {
   void main();
 }
